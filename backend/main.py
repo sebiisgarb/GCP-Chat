@@ -15,7 +15,11 @@ LOCATION = os.getenv("GCP_LOCATION")
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 model = GenerativeModel(
         "gemini-2.5-flash-lite-preview-09-2025",
-        system_instruction="You are a concise technical assistant."
+        system_instruction=(
+            "You are a concise technical assistant. "
+            "When writing code examples, always use proper multi-line formatting "
+            "with newlines and indentation — never collapse code onto a single line."
+        )
 )
 
 app = FastAPI()
@@ -45,5 +49,7 @@ async def chat(req: ChatRequest):
 
     def stream():
         for chunk in chat_session.send_message(req.message, stream=True):
-            yield chunk.text
+            text = chunk.text
+            if text:
+                yield text
     return StreamingResponse(stream(), media_type="text/plain")

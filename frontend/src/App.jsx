@@ -12,24 +12,29 @@ function getTime() {
 
 
 const markdownComponents = {
-  code({ node, inline, className, children, ...props }) {
+  pre({ children }) {
+    return <>{children}</>
+  },
+  code({ node, className, children, ...props }) {
     const match = /language-(\w+)/.exec(className || "")
     const lang = match ? match[1] : ""
-    if (!inline && lang) {
+    const childString = String(children).replace(/\n$/, "")
+    const isBlock = !!className || childString.includes("\n")
+    if (isBlock) {
       return (
         <SyntaxHighlighter
           style={oneDark}
-          language={lang}
-          PreTag="div"
+          language={lang || "text"}
+          PreTag="pre"
           customStyle={{
             borderRadius: 10,
             fontSize: 13,
             margin: "8px 0",
             border: "1px solid #2a2a2a",
+            overflowX: "auto",
           }}
-          {...props}
         >
-          {String(children).replace(/\n$/, "")}
+          {childString}
         </SyntaxHighlighter>
       )
     }
@@ -60,7 +65,7 @@ const markdownComponents = {
   },
 }
 
-function ChatMessage({ msg }) {
+function ChatMessage({ msg, isStreaming }) {
   const isUser = msg.role === "user"
   return (
     <motion.div
@@ -90,9 +95,15 @@ function ChatMessage({ msg }) {
           textAlign: "left",
         }}
       >
-        <ReactMarkdown components={markdownComponents}>
-          {msg.content}
-        </ReactMarkdown>
+        {isStreaming ? (
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "inherit", fontSize: 14, lineHeight: 1.6 }}>
+            {msg.content}
+          </pre>
+        ) : (
+          <ReactMarkdown components={markdownComponents}>
+            {msg.content}
+          </ReactMarkdown>
+        )}
       </div>
       <span style={{ fontSize: 11, color: "#555", marginTop: 4, paddingInline: 4 }}>
         {msg.timestamp}
@@ -215,7 +226,7 @@ export default function App() {
 
         <AnimatePresence initial={false}>
           {messages.map((msg, i) => (
-            <ChatMessage key={i} msg={msg} />
+            <ChatMessage key={i} msg={msg} isStreaming={loading && i === messages.length - 1} />
           ))}
         </AnimatePresence>
 
